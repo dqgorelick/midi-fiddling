@@ -14,13 +14,14 @@ body {
 
 .initialize {
     text-align: center;
-    padding-top: 200px;
+    padding-top: 0;
     display: none;
     cursor: pointer;
     color: white;
 }
 
 .initialize.active {
+    padding-top: 200px;
     display: block;
 }
 

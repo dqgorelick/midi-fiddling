@@ -74,12 +74,13 @@ const bezierCommand = (point, i, a) => {
 
 const generatePoints = (num, offsetX) => {
   const scaleX = 15
-  const scaleY = (window.innerHeight / num) * 1.3;
+  const scaleY = (window.innerHeight / (num) ) * 1;
+  // const scale
   const points = []
   // dir = 1;
   for (let i=0; i<num; i++) {
     let dir = Math.random() < 0.5 ? -1 : 1;
-    points.push([offsetX + dir * 0.04 * (i*i) * randRange(60, 200),  window.innerHeight - i * scaleY])
+    points.push([offsetX + dir * 0.04 * (i*i) * randRange(60, 200),  500 - i*scaleY])
   }
   return points
 }
@@ -120,7 +121,7 @@ const getMidiID = (midi) => {
 const startNote = (key, id) => {
   // const points = generatePoints(10, window.innerWidth/2)
   const steps = window.innerWidth/38
-  const points = generatePoints(10,  (13 + (key % 12)) * steps)
+  const points = generatePoints(10,  (10 + (key % 12)) * steps)
   const d = svgPath(points, bezierCommand)
   const path = createSVGPath(key, d, 'animating', id);
   const pathEnd = createSVGPath(key, d, '', id + '_end');
@@ -143,46 +144,6 @@ const upper = [81,50,87,51,69,82,53,84,54,89,55,85,73,57,79,48,80,219,187,221]
 const lower = [90,83,88,68,67,86,71,66,72,78,74,77,188,76,190,186,191]
 const keysPressed = {}
 
-document.addEventListener('keydown', function(e) {
-    const key = e.which;
-    const up = upper.indexOf(key)
-    const low = lower.indexOf(key)
-    if (up !== -1 && !keysPressed[key]) {
-        const midi = up + 60
-        keysPressed[key] = true
-        console.log(midi)
-        const id = addKeyCount(midi)
-        synth.triggerAttackRelease(Tone.Frequency(midi, "midi").eval())
-        startNote(midi, midi + '_' + id)
-    }
-    if (low !== -1 && !keysPressed[key]) {
-        const midi = low + 48
-        keysPressed[key] = true
-        console.log(midi)
-        const id = addKeyCount(midi)
-        synth.triggerAttackRelease(Tone.Frequency(midi, "midi").eval())
-        startNote(midi, midi + '_' + id)
-    }
-});
-
-document.addEventListener('keyup', function(e) {
-    const key = e.which;
-    const up = upper.indexOf(key)
-    const low = lower.indexOf(key)
-    if (up !== -1) {
-        const midi = up + 60
-        keysPressed[key] = false
-        synth.triggerRelease(Tone.Frequency(midi, "midi").eval())
-        endNote(midi)
-    }
-    if (low !== -1) {
-        const midi = low + 48
-        keysPressed[key] = false
-        synth.triggerRelease(Tone.Frequency(midi, "midi").eval())
-        endNote(midi)
-    }
-});
-
 
 const vol = new Tone.Volume(12)
 const synth = duoSynth()
@@ -201,7 +162,36 @@ function duoSynth() {
 }
 
 
+function initMidi() {
+  WebMidi.enable(function (err) {
+
+      WebMidi.inputs.forEach(function(input) {
+        // Listen for a 'note on' message on all channels
+        input.addListener('noteon', "all",
+          function (e) {
+            synth.triggerAttackRelease(Tone.Frequency(e.note.number, "midi").eval());
+            activateNote(e.note.number)
+          }
+        );
+
+        // Listen to pitch bend message on channel 3
+        input.addListener('noteoff', "all",
+          function (e) {
+            synth.triggerRelease(Tone.Frequency(e.note.number, "midi").eval());
+            disableNote(e.note.number)
+          }
+        );
+
+      })
+  });
+
+
+}
+
+
 const init = () => {
+
+
   document.addEventListener('keydown', function(e) {
       const key = e.which;
       const up = upper.indexOf(key)
@@ -209,16 +199,18 @@ const init = () => {
       if (up !== -1 && !keysPressed[key]) {
           const midi = up + 60
           keysPressed[key] = true
+          console.log(midi)
           const id = addKeyCount(midi)
-          startNote(midi, midi + '_' + id)
           synth.triggerAttackRelease(Tone.Frequency(midi, "midi").eval())
+          startNote(midi, midi + '_' + id)
       }
       if (low !== -1 && !keysPressed[key]) {
           const midi = low + 48
           keysPressed[key] = true
+          console.log(midi)
           const id = addKeyCount(midi)
-          startNote(midi, midi + '_' + id)
           synth.triggerAttackRelease(Tone.Frequency(midi, "midi").eval())
+          startNote(midi, midi + '_' + id)
       }
   });
 
@@ -229,16 +221,19 @@ const init = () => {
       if (up !== -1) {
           const midi = up + 60
           keysPressed[key] = false
-          endNote(midi)
           synth.triggerRelease(Tone.Frequency(midi, "midi").eval())
+          endNote(midi)
       }
       if (low !== -1) {
           const midi = low + 48
           keysPressed[key] = false
-          endNote(midi)
           synth.triggerRelease(Tone.Frequency(midi, "midi").eval())
+          endNote(midi)
       }
   });
+
+  initMidi();
+
 }
 
 
