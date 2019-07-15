@@ -152,6 +152,7 @@ document.addEventListener('keydown', function(e) {
         keysPressed[key] = true
         console.log(midi)
         const id = addKeyCount(midi)
+        synth.triggerAttackRelease(Tone.Frequency(midi, "midi").eval())
         startNote(midi, midi + '_' + id)
     }
     if (low !== -1 && !keysPressed[key]) {
@@ -159,6 +160,7 @@ document.addEventListener('keydown', function(e) {
         keysPressed[key] = true
         console.log(midi)
         const id = addKeyCount(midi)
+        synth.triggerAttackRelease(Tone.Frequency(midi, "midi").eval())
         startNote(midi, midi + '_' + id)
     }
 });
@@ -170,14 +172,82 @@ document.addEventListener('keyup', function(e) {
     if (up !== -1) {
         const midi = up + 60
         keysPressed[key] = false
+        synth.triggerRelease(Tone.Frequency(midi, "midi").eval())
         endNote(midi)
     }
     if (low !== -1) {
         const midi = low + 48
         keysPressed[key] = false
+        synth.triggerRelease(Tone.Frequency(midi, "midi").eval())
         endNote(midi)
     }
 });
+
+
+const vol = new Tone.Volume(12)
+const synth = duoSynth()
+Tone.bufferSize = 2048*2;
+
+function duoSynth() {
+    return new Tone.PolySynth(5, Tone.DuoSynth, {
+    'vibratoAmount': 0.25,
+    'vibratoRate': 3.5,
+    'envelope': {
+        'attack': 0.01,
+        'decay': 0,
+        'release': 0.2
+    },
+    }).chain(vol).toMaster();
+}
+
+
+const init = () => {
+  document.addEventListener('keydown', function(e) {
+      const key = e.which;
+      const up = upper.indexOf(key)
+      const low = lower.indexOf(key)
+      if (up !== -1 && !keysPressed[key]) {
+          const midi = up + 60
+          keysPressed[key] = true
+          const id = addKeyCount(midi)
+          startNote(midi, midi + '_' + id)
+          synth.triggerAttackRelease(Tone.Frequency(midi, "midi").eval())
+      }
+      if (low !== -1 && !keysPressed[key]) {
+          const midi = low + 48
+          keysPressed[key] = true
+          const id = addKeyCount(midi)
+          startNote(midi, midi + '_' + id)
+          synth.triggerAttackRelease(Tone.Frequency(midi, "midi").eval())
+      }
+  });
+
+  document.addEventListener('keyup', function(e) {
+      const key = e.which;
+      const up = upper.indexOf(key)
+      const low = lower.indexOf(key)
+      if (up !== -1) {
+          const midi = up + 60
+          keysPressed[key] = false
+          endNote(midi)
+          synth.triggerRelease(Tone.Frequency(midi, "midi").eval())
+      }
+      if (low !== -1) {
+          const midi = low + 48
+          keysPressed[key] = false
+          endNote(midi)
+          synth.triggerRelease(Tone.Frequency(midi, "midi").eval())
+      }
+  });
+}
+
+
+StartAudioContext(Tone.context, '.starter-button').then(function(){
+    document.querySelectorAll('.initialize')[0].classList = ['initialize'];
+    setKeyColors();
+    init();
+});
+
 
 
 const keyColors = [];
@@ -191,5 +261,3 @@ const setKeyColors = () => {
         keyColors.push(map(i, min, max, 0, 400))%256
     }
 }
-
-setKeyColors();

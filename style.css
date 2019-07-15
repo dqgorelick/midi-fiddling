@@ -1,5 +1,6 @@
 :root {
   --stroke;
+  --len;
 }
 
 body {
@@ -8,6 +9,21 @@ body {
   padding: 0;
   background-color: black;
 }
+
+
+
+.initialize {
+    text-align: center;
+    padding-top: 200px;
+    display: none;
+    cursor: pointer;
+    color: white;
+}
+
+.initialize.active {
+    display: block;
+}
+
 
 path,
 line {
