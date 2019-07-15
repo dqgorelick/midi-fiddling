@@ -1,0 +1,61 @@
+:root {
+  --stroke;
+}
+
+body {
+  font-family: "Benton Sans", "Helvetica Neue", helvetica, arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: black;
+}
+
+path,
+line {
+  fill: none;
+  /*stroke: rgba(0, 0, 0, 0);*/
+  stroke-width: 11;
+  /*stroke-linecap: round;
+  stroke-linejoin: round;*/
+  stroke-miterlimit: 10;
+}
+
+html, body { margin:0; padding:0; overflow:hidden }
+svg {
+  position:fixed;
+  top:0;
+  left:0;
+  height:100%;
+  width:100%;
+}
+
+.animatingEnd {
+    stroke-width: 12;
+    animation: linePulseEnd 2.9s linear forwards;
+  }
+
+@keyframes linePulseEnd {
+    0% {
+      stroke: rgba(0,0,0,1);
+      stroke-dasharray: 0 var(--len);
+    }
+    100% {
+      stroke: rgba(0,0,0,1);
+      stroke-dasharray: var(--len) 0;
+    }
+}
+
+
+.animating {
+    animation: linePulse 3s linear forwards;
+  }
+
+@keyframes linePulse {
+    0% {
+      stroke: hsla(var(--stroke), 100%, 75%, 1);
+      stroke-dasharray: 0 var(--len);
+    }
+    100% {
+      stroke: hsla(var(--stroke), 100%, 75%, 1);
+      stroke-dasharray: var(--len) 0;
+    }
+}
