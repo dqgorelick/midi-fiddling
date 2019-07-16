@@ -46,7 +46,7 @@ const controlPoint = (current, previous, next, reverse) => {
   const p = previous || current
   const n = next || current
   // The smoothing ratio
-  const smoothing = 0.25
+  const smoothing = 1.4
   // Properties of the opposed-line
   const o = line(p, n)
   // If is end-control-point, add PI to the angle to go backward
@@ -74,13 +74,14 @@ const bezierCommand = (point, i, a) => {
 
 const generatePoints = (num, offsetX) => {
   const scaleX = 15
-  const scaleY = (window.innerHeight / (num) ) * 1;
+  const scaleY = (window.innerHeight / (num) ) * 0.8;
   // const scale
   const points = []
   // dir = 1;
   for (let i=0; i<num; i++) {
     let dir = Math.random() < 0.5 ? -1 : 1;
-    points.push([offsetX + dir * 0.04 * (i*i) * randRange(60, 200),  500 - i*scaleY])
+    points.push([offsetX + dir * 0.20 * (i) * randRange(50, 150),  500 - i*scaleY])
+    // points.push([offsetX ,  500 - i*scaleY])
   }
   return points
 }
@@ -97,7 +98,23 @@ const createSVGPath = (key, path, animation, id) => {
 
     const color = keyColors[key]
     const len = newPath.getTotalLength()
-    newPath.setAttributeNS(null, 'style', `--stroke: ${color}; --len: ${len}`);
+    // newPath.setAttributeNS(null, 'style', `--stroke: ${color}; --len: ${len}`);
+
+    // offset is always the length * 2
+    const path_offset = len
+    const start = len
+    const initial = len
+    const segment_length = len
+    const end = len*2
+
+    newPath.setAttributeNS(null, 'style',
+      `--stroke: ${color};
+      --offset: ${path_offset};
+      --start: ${start};
+      --end: ${end};
+      --initial: ${initial};
+      --segment_length: ${segment_length}`)
+
     // newPath.setAttributeNS(null, 'style', `stroke: red`);
 
     return newPath
@@ -124,19 +141,53 @@ const startNote = (key, id) => {
   const points = generatePoints(10,  (10 + (key % 12)) * steps)
   const d = svgPath(points, bezierCommand)
   const path = createSVGPath(key, d, 'animating', id);
-  const pathEnd = createSVGPath(key, d, '', id + '_end');
+  // const pathEnd = createSVGPath(key, d, '', id + '_end');
   svg.appendChild(path);
-  svg.appendChild(pathEnd);
+  // svg.appendChild(pathEnd);
 }
 
 const endNote = (midi) => {
   const id = getMidiID(midi)
   const path = document.getElementById(id)
-  const pathEnd = document.getElementById(id + '_end')
-  pathEnd.classList.add('animatingEnd')
+  // const pathEnd = document.getElementById(id + '_end')
+  const matrix = getComputedStyle(path).getPropertyValue('stroke-dasharray')
+  const dashArrayStart = parseFloat(matrix.split('px')[0], 10)
+
+
+
+  // // offset is always the length * 2
+  // const path_offset = len
+  // const start = len
+  // const initial = len
+  // const segment_length = len
+  // const end = len*2
+
+
+
+  const len = path.getTotalLength()
+  const color = keyColors[midi]
+  const path_offset = len*2
+  const start = len
+  const initial = len
+  const segment_length = dashArrayStart - len
+  const end = len + len + segment_length
+
+  path.setAttributeNS(null, 'style',
+    `--stroke: ${color};
+    --offset: ${path_offset};
+    --start: ${start};
+    --end: ${end};
+    --initial: ${initial};
+    --segment_length: ${segment_length}`)
+  console.log(`(${path_offset})`)
+  console.log(`(${start}, ${initial}, ${segment_length})`)
+  console.log(`(${end}, ${initial}, ${segment_length})`)
+  path.setAttributeNS(null, 'class', 'animatingEnd')
+  console.log(len, path.getTotalLength())
+
   setTimeout(() => {
     svg.removeChild(path)
-    svg.removeChild(pathEnd)
+    // svg.removeChild(pathEnd)
   }, 1000 * 3) // TODO: MAKE THIS DYNAMIC
 }
 
@@ -199,7 +250,7 @@ const init = () => {
       if (up !== -1 && !keysPressed[key]) {
           const midi = up + 60
           keysPressed[key] = true
-          console.log(midi)
+          // console.log(midi)
           const id = addKeyCount(midi)
           synth.triggerAttackRelease(Tone.Frequency(midi, "midi").eval())
           startNote(midi, midi + '_' + id)
@@ -207,7 +258,7 @@ const init = () => {
       if (low !== -1 && !keysPressed[key]) {
           const midi = low + 48
           keysPressed[key] = true
-          console.log(midi)
+          // console.log(midi)
           const id = addKeyCount(midi)
           synth.triggerAttackRelease(Tone.Frequency(midi, "midi").eval())
           startNote(midi, midi + '_' + id)

@@ -1,6 +1,11 @@
 :root {
   --stroke;
   --len;
+  --offset;
+  --start;
+  --end;
+  --initial;
+  --segment_length;
 }
 
 body {
@@ -31,8 +36,8 @@ line {
   fill: none;
   /*stroke: rgba(0, 0, 0, 0);*/
   stroke-width: 11;
-  /*stroke-linecap: round;
-  stroke-linejoin: round;*/
+  stroke-linecap: round;
+  stroke-linejoin: round;
   stroke-miterlimit: 10;
 }
 
@@ -46,33 +51,39 @@ svg {
 }
 
 .animatingEnd {
-    stroke-width: 12;
-    animation: linePulseEnd 2.9s linear forwards;
-  }
+  animation: linePulseEnd 1.8s linear forwards;
+}
 
 @keyframes linePulseEnd {
     0% {
-      stroke: rgba(0,0,0,1);
-      stroke-dasharray: 0 var(--len);
+      stroke: hsla(var(--stroke), 100%, 75%, 1);
+      stroke-dashoffset: var(--offset);
+      stroke-dasharray: var(--start) var(--initial) var(--segment_length);
+    }
+    50% {
+      stroke: hsla(var(--stroke), 100%, 75%, 0);
     }
     100% {
-      stroke: rgba(0,0,0,1);
-      stroke-dasharray: var(--len) 0;
+      stroke: hsla(var(--stroke), 100%, 75%, 0);
+      stroke-dashoffset: var(--offset);
+      stroke-dasharray: var(--end) var(--initial) var(--segment_length);
     }
 }
 
 
 .animating {
-    animation: linePulse 3s linear forwards;
-  }
+  animation: linePulse 1.8s linear forwards;
+}
 
 @keyframes linePulse {
     0% {
       stroke: hsla(var(--stroke), 100%, 75%, 1);
-      stroke-dasharray: 0 var(--len);
+      stroke-dashoffset: var(--offset);
+      stroke-dasharray: var(--start) var(--initial) var(--segment_length);
     }
     100% {
       stroke: hsla(var(--stroke), 100%, 75%, 1);
-      stroke-dasharray: var(--len) 0;
+      stroke-dashoffset: var(--offset);
+      stroke-dasharray: var(--end) var(--initial) var(--segment_length);
     }
 }
