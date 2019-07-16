@@ -7,6 +7,7 @@ const map = (n, start1, stop1, start2, stop2) => {
   return ((n-start1)/(stop1-start1))*(stop2-start2)+start2;
 };
 
+const ANIMATION_TIME = 2.5
 
 // code from: https://medium.com/@francoisromain/smooth-a-svg-path-with-cubic-bezier-curves-e37b49d46c74
 
@@ -46,7 +47,7 @@ const controlPoint = (current, previous, next, reverse) => {
   const p = previous || current
   const n = next || current
   // The smoothing ratio
-  const smoothing = 1.4
+  const smoothing = 1.1
   // Properties of the opposed-line
   const o = line(p, n)
   // If is end-control-point, add PI to the angle to go backward
@@ -178,13 +179,9 @@ const endNote = (midi) => {
     --start: ${start};
     --end: ${end};
     --initial: ${initial};
+    --start_midway: ${(start + end)/2};
     --segment_length: ${segment_length}`)
-  console.log(`(${path_offset})`)
-  console.log(`(${start}, ${initial}, ${segment_length})`)
-  console.log(`(${end}, ${initial}, ${segment_length})`)
   path.setAttributeNS(null, 'class', 'animatingEnd')
-  console.log(len, path.getTotalLength())
-
   setTimeout(() => {
     svg.removeChild(path)
     // svg.removeChild(pathEnd)
@@ -235,14 +232,9 @@ function initMidi() {
 
       })
   });
-
-
 }
 
-
 const init = () => {
-
-
   document.addEventListener('keydown', function(e) {
       const key = e.which;
       const up = upper.indexOf(key)

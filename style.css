@@ -6,6 +6,8 @@
   --end;
   --initial;
   --segment_length;
+  --segment_length_half;
+  --timeout: 2.5s;
 }
 
 body {
@@ -35,10 +37,10 @@ path,
 line {
   fill: none;
   /*stroke: rgba(0, 0, 0, 0);*/
-  stroke-width: 11;
+  stroke-width: 9;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-miterlimit: 10;
+  stroke-miterlimit: 8;
 }
 
 html, body { margin:0; padding:0; overflow:hidden }
@@ -51,7 +53,7 @@ svg {
 }
 
 .animatingEnd {
-  animation: linePulseEnd 1.8s linear forwards;
+  animation: linePulseEnd var(--timeout) linear forwards;
 }
 
 @keyframes linePulseEnd {
@@ -62,6 +64,8 @@ svg {
     }
     50% {
       stroke: hsla(var(--stroke), 100%, 75%, 0);
+      stroke-dashoffset: var(--offset);
+      stroke-dasharray: var(--start_midway) var(--initial) 0;
     }
     100% {
       stroke: hsla(var(--stroke), 100%, 75%, 0);
@@ -72,7 +76,7 @@ svg {
 
 
 .animating {
-  animation: linePulse 1.8s linear forwards;
+  animation: linePulse var(--timeout) linear forwards;
 }
 
 @keyframes linePulse {
