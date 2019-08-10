@@ -6,7 +6,7 @@ const map = (n, start1, stop1, start2, stop2) => {
   return ((n-start1)/(stop1-start1))*(stop2-start2)+start2;
 };
 
-
+const FIXED_LENGTH = false;
 const NOTE_LENGTH = 0.7;
 const ANIMATION_TIME = 3
 const MOUSE_CONTROL = false
@@ -112,7 +112,6 @@ const createSVGPath = (key, path, animation, id) => {
     return newPath
 }
 
-const keyEnvelopes = {}
 const keyCounters = {}
 
 const addKeyCount = (key) => {
@@ -124,11 +123,7 @@ const addKeyCount = (key) => {
   return keyCounters[key]
 }
 
-const getMidiID = (midi) => {
-  return midi + '_' + keyCounters[midi]
-}
-
-const startNote = (key, id) => {
+const startNoteAnimation = (key, id) => {
   playingNotes = true;
   backgroundHaze(true);
   const steps = window.innerWidth/60
@@ -138,7 +133,7 @@ const startNote = (key, id) => {
   svg.appendChild(path);
 }
 
-const endNote = (midi, id) => {
+const endNoteAnimation = (midi, id) => {
   // const id = getMidiID(midi)
   const path = document.getElementById(id)
   const matrix = getComputedStyle(path).getPropertyValue('stroke-dasharray')
@@ -185,7 +180,7 @@ function initMidi() {
             // if (!keysPressed[midi]) {
               // keysPressed[midi] = true
               // console.log(midi)
-            playMidi(midi)
+            playFixedLengthMidi(midi)
           }
         );
 
@@ -209,14 +204,14 @@ const setKeyColors = () => {
 
 
 const backgroundHaze = (on) => {
-    // if (on) {
-        // console.log('turning on!')
-    //     backgroundHue = (backgroundHue + 4)%256
-    //     $('body').css('background-color', 'hsla('+ backgroundHue +', 100%, 40%, 0.2)')
-    // } else {
-    //     console.log('turning off!')
-    //     $('body').css('background-color', '#222222')
-    // }
+    if (on) {
+        console.log('turning on!')
+        backgroundHue = (backgroundHue + 4)%256
+        $('body').css('background-color', 'hsla('+ backgroundHue +', 100%, 40%, 0.2)')
+    } else {
+        console.log('turning off!')
+        $('body').css('background-color', '#222222')
+    }
 }
 
 var playingNotes = false;
@@ -226,15 +221,32 @@ const upper = [81,50,87,51,69,82,53,84,54,89,55,85,73,57,79,48,80,219,187,221]
 const lower = [90,83,88,68,67,86,71,66,72,78,74,77,188,76,190,186,191]
 const keysPressed = {}
 
-const playMidi = (midi) => {
+const playFixedLengthMidi = (midi) => {
   const id = addKeyCount(midi)
 
   const noteId = midi + '_' + id
-  startNote(midi, noteId)
+  startNoteAnimation(midi, noteId)
   startWaveTableNow(midi)
   setTimeout(() => {
-    endNote(midi, noteId);
+    endNoteAnimation(midi, noteId);
   }, NOTE_LENGTH/(4 * (py*3 + 1)) * 1000)
+}
+
+const keyEnvelopes = {}
+
+const startMidi = (midiNote) => {
+  if (keyEnvelopes[midiNote] !== undefined) {
+    endMidi(midiNote);
+  }
+  keyEnvelopes[midiNote] = {envelope: player.queueWaveTable(audioContext, audioContext.destination, _tone_0110_Aspirin_sf2_file, 0, midiNote, 999,true)}
+}
+
+const endMidi = (midiNote) => {
+  console.log(midiNote, keyEnvelopes[midiNote])
+  if(keyEnvelopes[midiNote].envelope){
+    keyEnvelopes[midiNote].envelope.cancel();
+    keyEnvelopes[midiNote].envelope=null;
+  }
 }
 
 const init = () => {
@@ -249,9 +261,8 @@ const init = () => {
       if (up === -1 && low === -1) {
         return
       }
-      playMidi(midi)
+      playFixedLengthMidi(midi)
   });
-
 
   document.addEventListener('mousemove', function(e) {
     if (MOUSE_CONTROL) {
@@ -261,13 +272,13 @@ const init = () => {
   });
 
   document.addEventListener('click', function(e) {
-    playMidi(randRange(30, 90))
+    playFixedLengthMidi(randRange(30, 90))
     counter++;
     console.log(counter, py, px)
   });
 
   document.addEventListener('touchend', function(e) {
-    playMidi(randRange(30, 90))
+    playFixedLengthMidi(randRange(30, 90))
     counter++;
     console.log(counter, py, px)
   });
@@ -279,7 +290,9 @@ var counter = 0;
 
 StartAudioContext(Tone.context, '.starter-button').then(function(){
 
-    var selectedPreset=_tone_0110_Aspirin_sf2_file;
+    var selectedPreset=_tone_0110_Aspirin_sf2_file; // vibes
+    // var selectedPreset=_tone_0530_Chaos_sf2_file; // ooos
+    // var selectedPreset=_tone_0161_SoundBlasterOld_sf2; // organ
     var AudioContextFunc = window.AudioContext || window.webkitAudioContext;
     var audioContext = new AudioContextFunc();
     var player=new WebAudioFontPlayer();
@@ -298,61 +311,46 @@ StartAudioContext(Tone.context, '.starter-button').then(function(){
     reverberator.output.connect(audioContext.destination);
     playCustomAHDSR()
     function playCustomAHDSR() {
-            for (var i = 0; i < selectedPreset.zones.length; i++) {
-              selectedPreset.zones[i].ahdsr = [{
-                  duration: 0,
-                  volume: 1
-                }, {
-                  duration: NOTE_LENGTH/10,
-                  volume: 0.9
-                }, {
-                  duration: NOTE_LENGTH/10,
-                  volume: 0.8
-                }, {
-                  duration: NOTE_LENGTH/10,
-                  volume: 0.7
-                }, {
-                  duration: NOTE_LENGTH/10,
-                  volume: 0.6
-                }, {
-                  duration: NOTE_LENGTH/10,
-                  volume: 0.5
-                }, {
-                  duration: NOTE_LENGTH/10,
-                  volume: 0.4
-                }, {
-                  duration: NOTE_LENGTH/10,
-                  volume: 0.3
-                }, {
-                  duration: NOTE_LENGTH/10,
-                  volume: 0.2
-                }, {
-                  duration: NOTE_LENGTH/10,
-                  volume: 0.1
-                }, {
-                  duration: NOTE_LENGTH/10,
-                  volume: 0.05
-                }
-              ];
-            }
+      for (var i = 0; i < selectedPreset.zones.length; i++) {
+        selectedPreset.zones[i].ahdsr = [{
+            duration: 0,
+            volume: 1
+          }, {
+            duration: NOTE_LENGTH/10,
+            volume: 0.9
+          }, {
+            duration: NOTE_LENGTH/10,
+            volume: 0.8
+          }, {
+            duration: NOTE_LENGTH/10,
+            volume: 0.7
+          }, {
+            duration: NOTE_LENGTH/10,
+            volume: 0.6
+          }, {
+            duration: NOTE_LENGTH/10,
+            volume: 0.5
+          }, {
+            duration: NOTE_LENGTH/10,
+            volume: 0.4
+          }, {
+            duration: NOTE_LENGTH/10,
+            volume: 0.3
+          }, {
+            duration: NOTE_LENGTH/10,
+            volume: 0.2
+          }, {
+            duration: NOTE_LENGTH/10,
+            volume: 0.1
+          }, {
+            duration: NOTE_LENGTH/10,
+            volume: 0.05
           }
+        ];
+      }
+    }
     // reverberator.wet.gain.setTargetAtTime(1.5,0,0.0001)
     player.adjustPreset(audioContext,selectedPreset);
-
-
-    window.playPipe = function(midiNote){
-      if (keyEnvelopes[midiNote] !== undefined) {
-        stopPipe(midiNote);
-      }
-      keyEnvelopes[midiNote] = {envelope: player.queueWaveTable(audioContext, audioContext.destination, _tone_0110_Aspirin_sf2_file, 0, midiNote, 999,true)}
-    }
-    window.stopPipe = function(midiNote){
-      console.log(midiNote, keyEnvelopes[midiNote])
-      if(keyEnvelopes[midiNote].envelope){
-        keyEnvelopes[midiNote].envelope.cancel();
-        keyEnvelopes[midiNote].envelope=null;
-      }
-    }
 
     window.startWaveTableNow = function(pitch) {
         // var audioBufferSourceNode = player.queueWaveTable(audioContext, audioContext.destination, selectedPreset, audioContext.currentTime + 0, pitch, 0.4);
