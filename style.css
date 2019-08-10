@@ -8,7 +8,7 @@
   --segment_length;
   --segment_length_half;
   --timeout: 7s;
-  --timeout2: 2.5s;
+  --timeout2: 3s;
 }
 
 html {
@@ -96,6 +96,7 @@ svg {
 
 
 .animating {
+  /*animation: linePulse var(--timeout) cubic-bezier(0.075, 0.82, 0.165, 1) forwards;*/
   animation: linePulse var(--timeout) cubic-bezier(0.19, 1, 0.22, 1) forwards;
 }
 

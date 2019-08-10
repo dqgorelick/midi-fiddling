@@ -6,11 +6,13 @@ const map = (n, start1, stop1, start2, stop2) => {
   return ((n-start1)/(stop1-start1))*(stop2-start2)+start2;
 };
 
-const ANIMATION_TIME = 2.5
+
+const NOTE_LENGTH = 0.7;
+const ANIMATION_TIME = 3
 const MOUSE_CONTROL = true
 const OUTPUT_AUDIO = false
-var py = 0
-var px = 0
+var px = .2618025751072961
+var py = 0.08366013071895424
 // SVG bezier path code from: https://medium.com/@francoisromain/smooth-a-svg-path-with-cubic-bezier-curves-e37b49d46c74
 
 const svgPath = (points, command) => {
@@ -40,9 +42,9 @@ const controlPoint = (current, previous, next, reverse) => {
   const n = next || current
   // The smoothing ratio
   let smoothing = 1.3
-  if (MOUSE_CONTROL) {
+  // if (MOUSE_CONTROL) {
     smoothing = 2 * py;
-  }
+  // }
   // Properties of the opposed-line
   const o = line(p, n)
   // If is end-control-point, add PI to the angle to go backward
@@ -71,9 +73,9 @@ const generatePoints = (num, offsetX) => {
   for (let i=0; i<num; i++) {
     const dir = Math.random() < 0.5 ? -1 : 1;
     var offsetFactor = randRange(0, 300)
-    if (MOUSE_CONTROL) {
+    // if (MOUSE_CONTROL) {
       offsetFactor = offsetFactor * px;
-    }
+    // }
     const x = offsetX + dir * 0.20 * (i) * offsetFactor
     const y = window.innerHeight - i * scaleY
     // const x = offsetX
@@ -110,6 +112,7 @@ const createSVGPath = (key, path, animation, id) => {
     return newPath
 }
 
+const keyEnvelopes = {}
 const keyCounters = {}
 
 const addKeyCount = (key) => {
@@ -135,8 +138,8 @@ const startNote = (key, id) => {
   svg.appendChild(path);
 }
 
-const endNote = (midi) => {
-  const id = getMidiID(midi)
+const endNote = (midi, id) => {
+  // const id = getMidiID(midi)
   const path = document.getElementById(id)
   const matrix = getComputedStyle(path).getPropertyValue('stroke-dasharray')
   const dashArrayStart = parseFloat(matrix.split('px')[0], 10)
@@ -167,19 +170,6 @@ const endNote = (midi) => {
   }, 1000 * ANIMATION_TIME)
 }
 
-function duoSynth() {
-    return new Tone.PolySynth(5, Tone.DuoSynth, {
-    'vibratoAmount': 0.25,
-    'vibratoRate': 3.5,
-    'envelope': {
-        'attack': 0.01,
-        'decay': 0,
-        'release': 0.2
-    },
-    }).chain(vol).toMaster();
-}
-
-
 function initMidi() {
   WebMidi.enable(function (err) {
 
@@ -192,29 +182,13 @@ function initMidi() {
         input.addListener('noteon', "all",
           function (e) {
             const midi = e.note.number
-            if (!keysPressed[midi]) {
-              keysPressed[midi] = true
+            // if (!keysPressed[midi]) {
+              // keysPressed[midi] = true
               // console.log(midi)
-              const id = addKeyCount(midi)
-              if (outputAudio) {
-                synth.triggerAttackRelease(Tone.Frequency(midi, "midi").eval())
-              }
-              startNote(midi, midi + '_' + id)
-            }
+            playMidi(midi)
           }
         );
 
-        // Listen to pitch bend message on channel 3
-        input.addListener('noteoff', "all",
-          function (e) {
-            const midi = e.note.number
-            if (outputAudio) {
-              synth.triggerRelease(Tone.Frequency(midi, "midi").eval())
-            }
-            keysPressed[midi] = false
-            endNote(midi)
-          }
-        );
 
       })
   });
@@ -252,58 +226,48 @@ const upper = [81,50,87,51,69,82,53,84,54,89,55,85,73,57,79,48,80,219,187,221]
 const lower = [90,83,88,68,67,86,71,66,72,78,74,77,188,76,190,186,191]
 const keysPressed = {}
 
+const playMidi = (midi) => {
+  const id = addKeyCount(midi)
 
-const vol = new Tone.Volume(12)
-const synth = duoSynth()
-Tone.bufferSize = 2048*2;
+  const noteId = midi + '_' + id
+  startNote(midi, noteId)
+  startWaveTableNow(midi)
+  setTimeout(() => {
+    endNote(midi, noteId);
+  }, NOTE_LENGTH/(4 * (py*3 + 1)) * 1000)
+}
 
 const init = () => {
   document.addEventListener('keydown', function(e) {
       const key = e.which;
       const up = upper.indexOf(key)
       const low = lower.indexOf(key)
-      if (up !== -1 && !keysPressed[key]) {
-          const midi = up + 60
-          keysPressed[key] = true
-          // console.log(midi)
-          const id = addKeyCount(midi)
-          synth.triggerAttackRelease(Tone.Frequency(midi, "midi").eval())
-          startNote(midi, midi + '_' + id)
+      let midi = up + 60
+      if (up === -1) {
+        midi = low + 48;
       }
-      if (low !== -1 && !keysPressed[key]) {
-          const midi = low + 48
-          keysPressed[key] = true
-          // console.log(midi)
-          const id = addKeyCount(midi)
-          synth.triggerAttackRelease(Tone.Frequency(midi, "midi").eval())
-          startNote(midi, midi + '_' + id)
+      if (up === -1 && low === -1) {
+        return
       }
+      playMidi(midi)
   });
 
-  document.addEventListener('keyup', function(e) {
-      const key = e.which;
-      const up = upper.indexOf(key)
-      const low = lower.indexOf(key)
-      if (up !== -1) {
-          const midi = up + 60
-          keysPressed[key] = false
-          synth.triggerRelease(Tone.Frequency(midi, "midi").eval())
-          endNote(midi)
-      }
-      if (low !== -1) {
-          const midi = low + 48
-          keysPressed[key] = false
-          synth.triggerRelease(Tone.Frequency(midi, "midi").eval())
-          endNote(midi)
-      }
-  });
 
   document.addEventListener('mousemove', function(e) {
-    py = 1 - ((e.clientY)/ window.innerHeight);
-    px = ((e.clientX)/ window.innerWidth);
+    if (MOUSE_CONTROL) {
+      py = 1 - ((e.clientY)/ window.innerHeight);
+      px = ((e.clientX)/ window.innerWidth);
+    }
   });
 
   document.addEventListener('click', function(e) {
+    playMidi(randRange(30, 90))
+    counter++;
+    console.log(counter, py, px)
+  });
+
+  document.addEventListener('touchend', function(e) {
+    playMidi(randRange(30, 90))
     counter++;
     console.log(counter, py, px)
   });
@@ -314,6 +278,89 @@ const init = () => {
 var counter = 0;
 
 StartAudioContext(Tone.context, '.starter-button').then(function(){
+
+    var selectedPreset=_tone_0110_Aspirin_sf2_file;
+    var AudioContextFunc = window.AudioContext || window.webkitAudioContext;
+    var audioContext = new AudioContextFunc();
+    var player=new WebAudioFontPlayer();
+    var channelMaster = player.createChannel(audioContext);
+    var reverberator = player.createReverberator(audioContext);
+
+    var channelDrums = player.createChannel(audioContext);
+    var channelBass = player.createChannel(audioContext);
+    var channelDistortion = player.createChannel(audioContext);
+    var channelMaster = player.createChannel(audioContext);
+    var reverberator = player.createReverberator(audioContext);
+    channelDrums.output.connect(channelMaster.input);
+    channelBass.output.connect(channelMaster.input);
+    channelDistortion.output.connect(channelMaster.input);
+    channelMaster.output.connect(reverberator.input);
+    reverberator.output.connect(audioContext.destination);
+    playCustomAHDSR()
+    function playCustomAHDSR() {
+            for (var i = 0; i < selectedPreset.zones.length; i++) {
+              selectedPreset.zones[i].ahdsr = [{
+                  duration: 0,
+                  volume: 1
+                }, {
+                  duration: NOTE_LENGTH/10,
+                  volume: 0.9
+                }, {
+                  duration: NOTE_LENGTH/10,
+                  volume: 0.8
+                }, {
+                  duration: NOTE_LENGTH/10,
+                  volume: 0.7
+                }, {
+                  duration: NOTE_LENGTH/10,
+                  volume: 0.6
+                }, {
+                  duration: NOTE_LENGTH/10,
+                  volume: 0.5
+                }, {
+                  duration: NOTE_LENGTH/10,
+                  volume: 0.4
+                }, {
+                  duration: NOTE_LENGTH/10,
+                  volume: 0.3
+                }, {
+                  duration: NOTE_LENGTH/10,
+                  volume: 0.2
+                }, {
+                  duration: NOTE_LENGTH/10,
+                  volume: 0.1
+                }, {
+                  duration: NOTE_LENGTH/10,
+                  volume: 0.05
+                }
+              ];
+            }
+          }
+    // reverberator.wet.gain.setTargetAtTime(1.5,0,0.0001)
+    player.adjustPreset(audioContext,selectedPreset);
+
+
+    window.playPipe = function(midiNote){
+      if (keyEnvelopes[midiNote] !== undefined) {
+        stopPipe(midiNote);
+      }
+      keyEnvelopes[midiNote] = {envelope: player.queueWaveTable(audioContext, audioContext.destination, _tone_0110_Aspirin_sf2_file, 0, midiNote, 999,true)}
+    }
+    window.stopPipe = function(midiNote){
+      console.log(midiNote, keyEnvelopes[midiNote])
+      if(keyEnvelopes[midiNote].envelope){
+        keyEnvelopes[midiNote].envelope.cancel();
+        keyEnvelopes[midiNote].envelope=null;
+      }
+    }
+
+    window.startWaveTableNow = function(pitch) {
+        // var audioBufferSourceNode = player.queueWaveTable(audioContext, audioContext.destination, selectedPreset, audioContext.currentTime + 0, pitch, 0.4);
+        // var audioBufferSourceNode = player.queueWaveTable(audioContext, audioContext.destination, selectedPreset, audioContext.currentTime + 0.4, pitch, 0.2);
+        // var audioBufferSourceNode = player.queueWaveTable(audioContext, audioContext.destination, selectedPreset, audioContext.currentTime + 0.6, pitch, 0.2);
+        // var audioBufferSourceNode = player.queueWaveTable(audioContext, audioContext.destination, selectedPreset, audioContext.currentTime, pitch, NOTE_LENGTH);
+        player.queueWaveTable(audioContext, audioContext.destination, selectedPreset, 0, pitch, NOTE_LENGTH);
+    }
     document.querySelectorAll('.initialize')[0].classList = ['initialize'];
     setKeyColors();
     init();
