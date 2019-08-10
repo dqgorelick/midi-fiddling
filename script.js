@@ -9,7 +9,7 @@ const map = (n, start1, stop1, start2, stop2) => {
 
 const NOTE_LENGTH = 0.7;
 const ANIMATION_TIME = 3
-const MOUSE_CONTROL = true
+const MOUSE_CONTROL = false
 const OUTPUT_AUDIO = false
 var px = .2618025751072961
 var py = 0.08366013071895424
