@@ -6,8 +6,11 @@ const map = (n, start1, stop1, start2, stop2) => {
   return ((n-start1)/(stop1-start1))*(stop2-start2)+start2;
 };
 
-const ANIMATION_TIME = 1.5
-
+const ANIMATION_TIME = 2.5
+const MOUSE_CONTROL = true
+const OUTPUT_AUDIO = false
+var py = 0
+var px = 0
 // SVG bezier path code from: https://medium.com/@francoisromain/smooth-a-svg-path-with-cubic-bezier-curves-e37b49d46c74
 
 const svgPath = (points, command) => {
@@ -36,7 +39,10 @@ const controlPoint = (current, previous, next, reverse) => {
   const p = previous || current
   const n = next || current
   // The smoothing ratio
-  const smoothing = 0
+  let smoothing = 1.3
+  if (MOUSE_CONTROL) {
+    smoothing = 2 * py;
+  }
   // Properties of the opposed-line
   const o = line(p, n)
   // If is end-control-point, add PI to the angle to go backward
@@ -64,7 +70,11 @@ const generatePoints = (num, offsetX) => {
   // dir = 1;
   for (let i=0; i<num; i++) {
     const dir = Math.random() < 0.5 ? -1 : 1;
-    const x = offsetX + dir * 0.20 * (i) * randRange(0, 300)
+    var offsetFactor = randRange(0, 300)
+    if (MOUSE_CONTROL) {
+      offsetFactor = offsetFactor * px;
+    }
+    const x = offsetX + dir * 0.20 * (i) * offsetFactor
     const y = window.innerHeight - i * scaleY
     // const x = offsetX
     points.push([x, y])
@@ -118,8 +128,8 @@ const getMidiID = (midi) => {
 const startNote = (key, id) => {
   playingNotes = true;
   backgroundHaze(true);
-  const steps = window.innerWidth/40
-  const points = generatePoints(7,  ((key) - 40) * steps)
+  const steps = window.innerWidth/60
+  const points = generatePoints(7,  ((key) - 30) * steps)
   const d = svgPath(points, bezierCommand)
   const path = createSVGPath(key, d, 'animating', id);
   svg.appendChild(path);
@@ -174,6 +184,10 @@ function initMidi() {
   WebMidi.enable(function (err) {
 
       WebMidi.inputs.forEach(function(input) {
+        // 'IAC Driver ableton<>processing'
+        // console.log(input)
+
+        var outputAudio = OUTPUT_AUDIO;
         // Listen for a 'note on' message on all channels
         input.addListener('noteon', "all",
           function (e) {
@@ -182,7 +196,9 @@ function initMidi() {
               keysPressed[midi] = true
               // console.log(midi)
               const id = addKeyCount(midi)
-              synth.triggerAttackRelease(Tone.Frequency(midi, "midi").eval())
+              if (outputAudio) {
+                synth.triggerAttackRelease(Tone.Frequency(midi, "midi").eval())
+              }
               startNote(midi, midi + '_' + id)
             }
           }
@@ -192,9 +208,10 @@ function initMidi() {
         input.addListener('noteoff', "all",
           function (e) {
             const midi = e.note.number
-            synth.triggerRelease(Tone.Frequency(e.note.number, "midi").eval());
+            if (outputAudio) {
+              synth.triggerRelease(Tone.Frequency(midi, "midi").eval())
+            }
             keysPressed[midi] = false
-            synth.triggerRelease(Tone.Frequency(midi, "midi").eval())
             endNote(midi)
           }
         );
@@ -219,7 +236,7 @@ const setKeyColors = () => {
 
 const backgroundHaze = (on) => {
     // if (on) {
-    //     console.log('turning on!')
+        // console.log('turning on!')
     //     backgroundHue = (backgroundHue + 4)%256
     //     $('body').css('background-color', 'hsla('+ backgroundHue +', 100%, 40%, 0.2)')
     // } else {
@@ -248,7 +265,7 @@ const init = () => {
       if (up !== -1 && !keysPressed[key]) {
           const midi = up + 60
           keysPressed[key] = true
-          console.log(midi)
+          // console.log(midi)
           const id = addKeyCount(midi)
           synth.triggerAttackRelease(Tone.Frequency(midi, "midi").eval())
           startNote(midi, midi + '_' + id)
@@ -256,7 +273,7 @@ const init = () => {
       if (low !== -1 && !keysPressed[key]) {
           const midi = low + 48
           keysPressed[key] = true
-          console.log(midi)
+          // console.log(midi)
           const id = addKeyCount(midi)
           synth.triggerAttackRelease(Tone.Frequency(midi, "midi").eval())
           startNote(midi, midi + '_' + id)
@@ -280,9 +297,21 @@ const init = () => {
           endNote(midi)
       }
   });
+
+  document.addEventListener('mousemove', function(e) {
+    py = 1 - ((e.clientY)/ window.innerHeight);
+    px = ((e.clientX)/ window.innerWidth);
+  });
+
+  document.addEventListener('click', function(e) {
+    counter++;
+    console.log(counter, py, px)
+  });
+
   initMidi();
 }
 
+var counter = 0;
 
 StartAudioContext(Tone.context, '.starter-button').then(function(){
     document.querySelectorAll('.initialize')[0].classList = ['initialize'];
