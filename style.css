@@ -8,7 +8,7 @@
   --segment_length;
   --segment_length_half;
   --timeout: 7s;
-  --timeout2: 3s;
+  --timeout2: 2s;
 }
 
 html {
@@ -43,10 +43,10 @@ path,
 line {
   fill: none;
   /*stroke: rgba(0, 0, 0, 0);*/
-  stroke-width: 12;
+  stroke-width: 25;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-miterlimit: 8;
+  /*stroke-miterlimit: 1;*/
 }
 
 html, body { margin:0; padding:0; overflow:hidden }
@@ -67,7 +67,7 @@ svg {
       stroke: hsla(var(--stroke), 100%, 75%, 1);
       /*stroke: rgba(255,255,255,1);*/
       stroke-dashoffset: var(--offset);
-      stroke-width: 12;
+      stroke-width: 25;
       stroke-dasharray: var(--start) var(--initial) var(--segment_length);
     }
     /*25% {
