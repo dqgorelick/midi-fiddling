@@ -6,16 +6,30 @@ const map = (n, start1, stop1, start2, stop2) => {
   return ((n-start1)/(stop1-start1))*(stop2-start2)+start2;
 };
 
-const FIXED_LENGTH = false;
+const mapVelocity = (velocity) => {
+  const MIN_STROKE_WIDTH = 20;
+  const MAX_STROKE_WIDTH = 60
+  return map(velocity, 0, 1, MIN_STROKE_WIDTH, MAX_STROKE_WIDTH);
+}
+
+var FIXED_LENGTH = true;
+const urlParams = new URLSearchParams(window.location.search);
+const voice = urlParams.get('voice');
+if (!!voice) {
+  FIXED_LENGTH = false;
+}
+
+const MOUSE_CONTROL = false;
+
 const NOTE_LENGTH = 0.7;
 const ANIMATION_TIME = 3
-const MOUSE_CONTROL = false
 const OUTPUT_AUDIO = false
 
+var paramSet = 0
 var params = [
 {
-  x: 0.0414878397711016,
-  y: 0.043740573152337855
+  x: 0.05227467811158796,
+  y: 0.05744431418522861
 }, {
   x: .2618025751072961,
   y: 0.08366013071895424
@@ -28,7 +42,6 @@ var params = [
 }
 ]
 
-var paramSet = 0
 var px = params[paramSet].x
 var py = params[paramSet].y
 // SVG bezier path code from: https://medium.com/@francoisromain/smooth-a-svg-path-with-cubic-bezier-curves-e37b49d46c74
@@ -105,11 +118,12 @@ const generatePoints = (num, offsetX) => {
 
 const svg = document.querySelector('.svg')
 
-const createSVGPath = (key, path, animation, id) => {
+const createSVGPath = (key, path, animation, id, velocity) => {
     let newPath = document.createElementNS("http://www.w3.org/2000/svg","path");
     newPath.setAttributeNS(null, "class", animation);
     newPath.setAttributeNS(null, "id", id);
     newPath.setAttributeNS(null, "d", path);
+    newPath.setAttributeNS(null, "data-velocity", velocity);
 
     const color = keyColors[key]
     const len = newPath.getTotalLength()
@@ -121,6 +135,7 @@ const createSVGPath = (key, path, animation, id) => {
 
     newPath.setAttributeNS(null, 'style',
       `--stroke: ${color};
+      --stroke-width: ${mapVelocity(velocity)};
       --offset: ${path_offset};
       --start: ${start};
       --end: ${end};
@@ -141,20 +156,20 @@ const addKeyCount = (key) => {
   return keyCounters[key]
 }
 
-const startNoteAnimation = (midi, id) => {
+const startNoteAnimation = (midi, id, velocity) => {
   // TODO: figure out how to get rid of lines drawn by notes played by two inputs (ie: midi1, midi2 or midi1 and keyboard)
   // const lastPath = document.getElementById(midi + '_' + (id-1))
   // if (lastPath !== null) {
   //   endNoteAnimation(midi, id-1)
   // }
   const steps = window.innerWidth/60
-  const points = generatePoints(7,  ((midi) - 30) * steps)
+  const points = generatePoints(7,  ((midi) - 25) * steps)
   const d = svgPath(points, bezierCommand)
-  const path = createSVGPath(midi, d, 'animating', midi + '_' + id);
+  const path = createSVGPath(midi, d, 'animating', midi + '_' + id, velocity);
   svg.appendChild(path);
 }
 
-const endNoteAnimation = (midi, id) => {
+const endNoteAnimation = (midi, id, velocity) => {
   const path = document.getElementById(midi + '_' + id)
   const matrix = getComputedStyle(path).getPropertyValue('stroke-dasharray')
   const dashArrayStart = parseFloat(matrix.split('px')[0], 10)
@@ -169,6 +184,7 @@ const endNoteAnimation = (midi, id) => {
 
   path.setAttributeNS(null, 'style',
     `--stroke: ${color};
+    --stroke-width: ${mapVelocity(path.dataset.velocity)};
     --offset: ${path_offset};
     --start: ${start};
     --end: ${end};
@@ -186,11 +202,11 @@ const keyColors = [];
 
 const setKeyColors = () => {
     var min = 0;
-    var max = 88;
+    var max = 160;
     var startingHue = randRange(0, 256)
 
     for (var i=min; i<max+1; i++) {
-        keyColors.push(map(i, min, max, 0, 1000))%256
+        keyColors.push(map(i, startingHue + min, startingHue + max, 0, 1000))%256
         // keyColors.push(randRange(0, 256))
     }
 }
@@ -200,23 +216,23 @@ const upper = [81,50,87,51,69,82,53,84,54,89,55,85,73,57,79,48,80,219,187,221]
 const lower = [90,83,88,68,67,86,71,66,72,78,74,77,188,76,190,186,191]
 const keysPressed = {}
 
-const playFixedLengthMidi = (midi) => {
+const playFixedLengthMidi = (midi, velocity) => {
   const id = addKeyCount(midi)
-  startNoteAnimation(midi, id)
-  startWaveTableNow(midi)
+  startNoteAnimation(midi, id, velocity)
+  startWaveTableNow(midi, velocity)
   setTimeout(() => {
-    endNoteAnimation(midi, id);
+    endNoteAnimation(midi, id, velocity);
   }, NOTE_LENGTH/(4 * (py*3 + 1)) * 1000)
 }
 
 const keyEnvelopes = {}
 
-const startMidi = (midiNote) => {
+const startMidi = (midiNote, velocity) => {
   if (keyEnvelopes[midiNote] !== undefined) {
     endMidi(midiNote)
   }
   keyEnvelopes[midiNote] = {
-    envelope: player.queueWaveTable(audioContext, audioContext.destination, selectedPreset, audioContext.currentTime + 0.02, midiNote, 999,true),
+    envelope: player.queueWaveTable(audioContext, audioContext.destination, selectedPreset, audioContext.currentTime + 0.02, midiNote, 999, velocity),
   }
 }
 
@@ -240,7 +256,7 @@ const init = () => {
       if (up === -1 && low === -1) {
         return
       }
-      playFixedLengthMidi(midi)
+      playFixedLengthMidi(midi, 0.7)
     } else {
       if (up !== -1 && !keysPressed[key]) {
           const midi = up + 60
@@ -248,15 +264,15 @@ const init = () => {
           // console.log(midi)
           const id = addKeyCount(midi)
           startMidi(midi)
-          startNoteAnimation(midi, id)
+          startNoteAnimation(midi, id, 1)
       }
       if (low !== -1 && !keysPressed[key]) {
           const midi = low + 48
           keysPressed[key] = true
           // console.log(midi)
           const id = addKeyCount(midi)
-          startMidi(midi)
-          startNoteAnimation(midi, id)
+          startMidi(midi, 0.7)
+          startNoteAnimation(midi, id, 1)
       }
     }
   });
@@ -271,7 +287,7 @@ const init = () => {
           if (!FIXED_LENGTH) {
             endMidi(midi)
             const id = keyCounters[midi]
-            endNoteAnimation(midi, id)
+            endNoteAnimation(midi, id, 1)
           }
       }
       if (low !== -1) {
@@ -280,7 +296,7 @@ const init = () => {
           if (!FIXED_LENGTH) {
             endMidi(midi)
             const id = keyCounters[midi]
-            endNoteAnimation(midi, id)
+            endNoteAnimation(midi, id, 1)
           }
       }
   });
@@ -293,7 +309,7 @@ const init = () => {
   });
 
   document.addEventListener('click', function(e) {
-    playFixedLengthMidi(randRange(30, 90))
+    playFixedLengthMidi(randRange(30, 90), 0.7)
     counter++;
     console.log(counter, py, px)
     if (!MOUSE_CONTROL) {
@@ -305,7 +321,7 @@ const init = () => {
   });
 
   document.addEventListener('touchend', function(e) {
-    playFixedLengthMidi(randRange(30, 90))
+    playFixedLengthMidi(randRange(30, 90), 0.7)
     counter++;
     console.log(counter, py, px)
   });
@@ -322,11 +338,11 @@ const init = () => {
       input.addListener('noteon', "all", (e) => {
           const midi = e.note.number
           if (FIXED_LENGTH) {
-            playFixedLengthMidi(midi)
+            playFixedLengthMidi(midi, e.velocity)
           } else {
             const id = addKeyCount(midi)
-            startMidi(midi)
-            startNoteAnimation(midi, id)
+            startMidi(midi, e.velocity)
+            startNoteAnimation(midi, id, e.velocity)
           }
         }
       );
@@ -336,7 +352,7 @@ const init = () => {
             const midi = e.note.number
             endMidi(midi)
             const id = keyCounters[midi]
-            endNoteAnimation(midi, id)
+            endNoteAnimation(midi, id, e.velocity)
           }
         }
       );
@@ -444,12 +460,12 @@ StartAudioContext(Tone.context, '.starter-button').then(function(){
     // reverberator.wet.gain.setTargetAtTime(1.5,0,0.0001)
     player.adjustPreset(audioContext,selectedPreset);
 
-    window.startWaveTableNow = function(pitch) {
+    window.startWaveTableNow = function(pitch, velocity) {
         // var audioBufferSourceNode = player.queueWaveTable(audioContext, audioContext.destination, selectedPreset, audioContext.currentTime + 0, pitch, 0.4);
         // var audioBufferSourceNode = player.queueWaveTable(audioContext, audioContext.destination, selectedPreset, audioContext.currentTime + 0.4, pitch, 0.2);
         // var audioBufferSourceNode = player.queueWaveTable(audioContext, audioContext.destination, selectedPreset, audioContext.currentTime + 0.6, pitch, 0.2);
         // var audioBufferSourceNode = player.queueWaveTable(audioContext, audioContext.destination, selectedPreset, audioContext.currentTime, pitch, NOTE_LENGTH);
-        player.queueWaveTable(audioContext, audioContext.destination, selectedPreset, audioContext.currentTime + 0.02, pitch, NOTE_LENGTH);
+        player.queueWaveTable(audioContext, audioContext.destination, selectedPreset, audioContext.currentTime + 0.02, pitch, NOTE_LENGTH, velocity);
     }
     document.querySelectorAll('.initialize')[0].classList = ['initialize'];
     setKeyColors();

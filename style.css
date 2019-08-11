@@ -67,7 +67,7 @@ svg {
       stroke: hsla(var(--stroke), 100%, 75%, 1);
       /*stroke: rgba(255,255,255,1);*/
       stroke-dashoffset: var(--offset);
-      stroke-width: 25;
+      stroke-width: var(--stroke-width);
       stroke-dasharray: var(--start) var(--initial) var(--segment_length);
     }
     /*25% {
@@ -75,12 +75,14 @@ svg {
     }*/
     49% {
       stroke: rgba(255,255,255,1);
+      stroke-width: var(--stroke-width);
       /*stroke: hsla(var(--stroke), 100%, 75%, 1);*/
     }
     50% {
       /*stroke: hsla(var(--stroke), 100%, 75%, 0);*/
       /*stroke-width: 0;*/
       stroke: rgba(255,255,255,0);
+      stroke-width: var(--stroke-width);
       /*stroke: hsla(var(--stroke), 100%, 75%, 0);*/
       stroke-dashoffset: var(--offset);
       stroke-dasharray: var(--start_midway) var(--initial) 0;
@@ -103,11 +105,13 @@ svg {
 @keyframes linePulse {
     0% {
       stroke: hsla(var(--stroke), 100%, 75%, 1);
+      stroke-width: var(--stroke-width);
       stroke-dashoffset: var(--offset);
       stroke-dasharray: var(--start) var(--initial) var(--segment_length);
     }
     100% {
       stroke: hsla(var(--stroke), 100%, 75%, 1);
+      stroke-width: var(--stroke-width);
       stroke-dashoffset: var(--offset);
       stroke-dasharray: var(--end) var(--initial) var(--segment_length);
     }
