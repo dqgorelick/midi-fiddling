@@ -20,24 +20,42 @@
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
-    <div class="initialize active">
-        <div class="starter-button">Click anywhere when ready 😎</div>
-    </div>
-    <div class="instructions-wrapper">
-        <div class="instructions">
-            <div class="instructions-content">
-                <i>keyboard controls: (piano mapping)</i><br><br>
-                black keys = {<span>2 3   5 6 7   9 0 =</span>}<br>
-                white keys = {<span>q w e r t y u i o p [ ]</span>}<br><br>
-                black keys = {<span>s d   g h j   l ;</span>}<br>
-                white keys = {<span>z x c v b n m , . /</span>}<br><br>
-                <i>mouse controls:</i><br><br>
-                click = change modes<br><br>
-            </div>
-        </div>
-    </div>
-    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" class="svg">
-    </svg>
-    <script src="./script.js"></script>
-  </body>
+      <div class="initialize active">
+          <div class="starter-button">Click anywhere when ready 😎</div>
+      </div>
+      <div class="instructions-wrapper">
+          <div class="instructions">
+              <div class="instructions-content">
+                  <i>keyboard controls: (piano mapping)</i><br><br>
+                  black keys = {<span>2 3   5 6 7   9 0 =</span>}<br>
+                  white keys = {<span>q w e r t y u i o p [ ]</span>}<br><br>
+                  black keys = {<span>s d   g h j   l ;</span>}<br>
+                  white keys = {<span>z x c v b n m , . /</span>}<br><br>
+                  spacebar = toggle mouse controls
+                  <br>
+                  <br>
+                  <b>click to hide controls</b>
+              </div>
+          </div>
+      </div>
+      <div class="mode-button-wrapper">
+          <div class="mode-buttons">
+              <div class="mode-button" id="vibes">
+                  Vibes
+              </div>
+              <div class="mode-button" id="organ">
+                  Organ
+              </div>
+              <div class="mode-button active" id="vox">
+                  Vox
+              </div>
+              <div class="mouse-mode-button" id="mouse-control">
+                  🕹
+              </div>
+          </div>
+      </div>
+      <svg version="1.1" xmlns="http://www.w3.org/2000/svg" class="svg">
+      </svg>
+      <script src="./script.js"></script>
+    </body>
 </html>

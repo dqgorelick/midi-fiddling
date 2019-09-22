@@ -27,38 +27,79 @@ body {
 }
 
 .instructions-wrapper, .vibrato-control {
-    padding-bottom: 20px;
-    position: absolute;
-    top: 10px;
-    left: 0;
-    margin: 0 2%;
+  z-index: 999;
+  padding-bottom: 20px;
+  position: absolute;
+  top: 10px;
+  left: 0;
+  margin: 0 2%;
+}
 
+.instructions-wrapper.inactive {
+  display: none;
 }
+
 .vibrato-control {
-    right: 0;
-    padding
+  right: 0;
+  padding
 }
+
 .instructions {
-    max-width: 600px;
+  max-width: 600px;
 }
+
 .instructions span {
-    font-family: Courier, monospace;
-    padding: 0 10px;
+  font-family: Courier, monospace;
+  padding: 0 10px;
 }
 
 .initialize {
-    text-align: center;
-    padding-top: 0;
-    display: none;
-    cursor: pointer;
-    color: white;
+  text-align: center;
+  padding-top: 0;
+  display: none;
+  cursor: pointer;
+  color: white;
 }
 
 .initialize.active {
-    padding-top: 200px;
-    display: block;
+  padding-top: 200px;
+  display: block;
 }
 
+
+.mode-button-wrapper {
+  position: absolute;
+  z-index: 9999;
+  top: 0;
+  right: 0;
+}
+
+.mode-buttons {
+  position: relative;
+}
+
+.mode-button, .mouse-mode-button {
+  float: right;
+  line-height: 50px;
+  text-align: center;
+  width: 50px;
+  height: 50px;
+  margin: 10px;
+  background-color: rgba(255,255,255, 0.5);
+  transition: background-color 0.1s linear;
+}
+
+.mode-button.active, .mouse-mode-button.active {
+  background-color: rgba(255,0,0, 1);
+}
+
+.mode-button:hover, .mouse-mode-button:hover {
+  background-color: white;
+}
+
+.mode-button.active:hover, .mouse-mode-button.active:hover {
+  background-color: rgba(255,0,0,1);
+}
 
 path,
 line {

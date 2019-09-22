@@ -14,14 +14,16 @@
     return map(velocity, 0, 1, MIN_STROKE_WIDTH, MAX_STROKE_WIDTH);
   }
 
-  var FIXED_LENGTH = true;
+  var FIXED_LENGTH = false;
+  var ARP = false; 
+
   const urlParams = new URLSearchParams(window.location.search);
   const voice = urlParams.get('voice');
   if (!!voice) {
     FIXED_LENGTH = false;
   }
 
-  const MOUSE_CONTROL = false;
+  var MOUSE_CONTROL = false;
 
   const NOTE_LENGTH = 0.7;
   const ANIMATION_TIME = 3
@@ -167,6 +169,9 @@
 
   const endNoteAnimation = (midi, id, velocity) => {
     const path = document.getElementById(midi + '_' + id)
+    if (!path) {
+      return
+    }
     const matrix = getComputedStyle(path).getPropertyValue('stroke-dasharray')
     const dashArrayStart = parseFloat(matrix.split('px')[0], 10)
 
@@ -190,7 +195,9 @@
     path.setAttributeNS(null, 'class', 'animatingEnd')
 
     setTimeout(() => {
-      svg.removeChild(path)
+      if (!path) {
+        svg.removeChild(path)
+      }
     }, 1000 * ANIMATION_TIME)
   }
 
@@ -234,18 +241,36 @@
   }
 
   const endMidi = (midiNote) => {
-    if (keyEnvelopes[midiNote].envelope) {
-      keyEnvelopes[midiNote].envelope.cancel();
-      keyEnvelopes[midiNote].envelope=null;
+    if (!!keyEnvelopes[midiNote]) {
+      if (keyEnvelopes[midiNote].envelope) {
+        keyEnvelopes[midiNote].envelope.cancel();
+        keyEnvelopes[midiNote].envelope=null;
+      }
     }
   }
 
   const init = () => {
+    
+    const modifierKeys = [91, 18, 16, 17];
 
     document.addEventListener('keydown', function(e) {
       const key = e.which;
       const up = upper.indexOf(key)
       const low = lower.indexOf(key)
+      
+      if (key === 32) {
+        toggleMouseControl()
+      }
+      if (modifierKeys.indexOf(key) !== -1) {
+        keysPressed[key] = true
+      }
+      for (let i=0; i<modifierKeys.length; i++) {
+        if (!!keysPressed[modifierKeys[i]]) {
+          console.log('modifier key pressed')
+          return   
+        }        
+      }
+      
       if (FIXED_LENGTH) {
         let midi = up + 60
         if (!FIXED_LENGTH) {
@@ -281,7 +306,7 @@
             keysPressed[key] = true
             // console.log(midi)
             const id = addKeyCount(midi)
-            startMidi(midi, 0.7)
+            startMidi(midi, 0.9)
             startNoteAnimation(midi, id, 1)
         }
       }
@@ -289,6 +314,10 @@
 
     document.addEventListener('keyup', function(e) {
         const key = e.which;
+        if (modifierKeys.indexOf(key) !== -1) {
+          console.log('modifier key off');
+          keysPressed[key] = false
+        }
         const up = upper.indexOf(key)
         const low = lower.indexOf(key)
         if (up !== -1) {
@@ -298,6 +327,7 @@
             }
             keysPressed[key] = false
             if (!FIXED_LENGTH) {
+      
               endMidi(midi)
               const id = keyCounters[midi]
               endNoteAnimation(midi, id, 1)
@@ -323,51 +353,122 @@
         px = ((e.clientX)/ window.innerWidth);
       }
     });
-
-    document.addEventListener('click', function(e) {
-      playFixedLengthMidi(randRange(30, 90), 0.7)
-      counter++;
-      console.log(counter, py, px)
-      if (!MOUSE_CONTROL) {
-        paramSet = (paramSet + 1) % params.length
-        console.log('paramSet:', paramSet)
-        px = params[paramSet].x
-        py = params[paramSet].y
-      }
+    
+    var instructionsWrapper = document.querySelectorAll('.instructions-wrapper')[0];
+    instructionsWrapper.addEventListener('click', function(e) {
+      
+      instructionsWrapper.classList.add('inactive');
     });
+  
+    var modeButtons = document.querySelectorAll('.mode-button')
+    modeButtons.forEach((mode) => {
+       mode.addEventListener('click', (e) => {
+         var id = e.target.id;
+         console.log(e.target.id)
+         $('.mode-button').removeClass('active')
+         document.querySelectorAll(`#${id}`)[0].classList.add('active');
+         if (id === 'vox') {
+            selectedPreset = _tone_0530_Aspirin_sf2_file; // ooos
+            FIXED_LENGTH = false;
+         } else if (id === 'vibes') {
+            selectedPreset = _tone_0110_FluidR3_GM_sf2_file; // vibes
+            FIXED_LENGTH = true;  
+         } else if (id === 'organ') {
+            selectedPreset=_tone_0161_SoundBlasterOld_sf2; // organ     
+            FIXED_LENGTH = false;
+         }
+       });  
+    })
+    
+    var mouseControlButton = document.querySelectorAll('.mouse-mode-button')[0]
+    
+    const toggleMouseControl = () => {
+      if (MOUSE_CONTROL) {
+        mouseControlButton.classList.remove('active')
+        MOUSE_CONTROL = false;
+      } else {
+        mouseControlButton.classList.add('active')
+        MOUSE_CONTROL = true;
+      }
+      console.log(MOUSE_CONTROL)
+    }
+    
+    mouseControlButton.addEventListener('click', (e) => {
+      console.log('clicked')
+      toggleMouseControl();
+      
+    });
+    // document.addEventListener('click', function(e) {
+    //   playFixedLengthMidi(randRange(30, 90), 0.7)
+    //   if (!MOUSE_CONTROL) {
+    //     paramSet = (paramSet + 1) % params.length
+    //     console.log('paramSet:', paramSet)
+    //     px = params[paramSet].x
+    //     py = params[paramSet].y
+    //   }
+    // });
+  
 
+    
     document.addEventListener('touchend', function(e) {
       playFixedLengthMidi(randRange(30, 90), 0.7)
-      counter++;
-      console.log(counter, py, px)
     });
+
+    var notesPressed = [];
+
+    var notePressedIndex = 0;
+    var lastNotePressedLength = 0;
+
+    setInterval(() => {
+      if (lastNotePressedLength !== notesPressed.length) {
+        notePressedIndex = 0;
+      }
+      if (notesPressed.length !== 0) {
+        playFixedLengthMidi(notesPressed[notePressedIndex], 0.7)
+      }
+      notePressedIndex++
+      if (notePressedIndex > notesPressed.length-1) {
+        notePressedIndex = 0
+      }
+      lastNotePressedLength = notesPressed.length
+    }, 200)
 
     WebMidi.enable(function (err) {
       WebMidi.inputs.forEach(function(input) {
         // 'IAC Driver ableton<>processing'
-
         input.addListener('noteon', "all", (e) => {
             const midi = e.note.number
-            if (FIXED_LENGTH) {
-              playFixedLengthMidi(midi, e.velocity)
+            if (ARP) {
+              notesPressed.push(midi)
+              console.log(notesPressed)
             } else {
-              const id = addKeyCount(midi)
-              startNoteAnimation(midi, id, e.velocity)
-              if (OUTPUT_AUDIO) {
-                startMidi(midi, e.velocity)
+              if (FIXED_LENGTH) {
+                playFixedLengthMidi(midi, e.velocity)
+              } else {
+                const id = addKeyCount(midi)
+                startNoteAnimation(midi, id, e.velocity)
+                if (OUTPUT_AUDIO) {
+                  startMidi(midi, e.velocity)
+                }
               }
             }
           }
         );
 
         input.addListener('noteoff', "all", (e) => {
-            if (!FIXED_LENGTH) {
-              const midi = e.note.number
-              if (OUTPUT_AUDIO) {
-                endMidi(midi)
+            const midi = e.note.number
+            if (ARP) {
+              notesPressed.splice(notesPressed.indexOf(midi), 1)
+              console.log(notesPressed)
+            } else {
+              if (!FIXED_LENGTH) {
+                const midi = e.note.number
+                if (OUTPUT_AUDIO) {
+                  endMidi(midi)
+                }
+                const id = keyCounters[midi]
+                endNoteAnimation(midi, id, e.velocity)
               }
-              const id = keyCounters[midi]
-              endNoteAnimation(midi, id, e.velocity)
             }
           }
         );
